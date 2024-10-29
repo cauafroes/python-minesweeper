@@ -1,0 +1,34 @@
+Requisitos
+• O jogo deve ser desenvolvido utilizando orienta¸c˜ao a objetos;
+• Deve haver uma classe que represente o jogo e implemente m´etodos para
+gerar um tabuleiro, exibir o tabuleiro na tela, criar jogadores, verificar se
+uma jogada ´e v´alida e fazer uma jogada;
+– O jogo deve ser limitado a 2 jogadores;
+– O tabuleiro de cada jogador deve ter tamanho fixo, 10 x 10.
+• Os jogadores devem ser capazes de interagir com o jogo, inserindo suas
+jogadas (linha, coluna);
+– No in´ıcio do jogo, os jogadores devem interagir no tabuleiro para
+indicar em que posi¸c˜ao as embarca¸c˜oes devem ser colocadas e se ser˜ao
+adicionadas na horizontal ou na vertical;
+∗ A posi¸c˜ao das embarca¸c˜oes n˜ao deve ser mostrada no tabuleiro
+exibido em tela.
+– Durante o jogo, os jogadores devem interagir com o tabuleiro para
+indicar qual posi¸c˜ao desejam atacar.
+• O jogo deve validar todas as jogadas feitas pelos jogadores. Se a jogada
+n˜ao for v´alida, o jogo deve informar ao usu´ario que a jogada ´e inv´alida e
+permitir que o jogador fa¸ca uma nova jogada;
+– Uma jogada ´e inv´alida se a posi¸c˜ao est´a fora do tabuleiro ou se o
+jogador tentar repetir uma posi¸c˜ao que j´a foi atacada.
+• A cada jogada, o tabuleiro deve ser atualizado e exibido na tela;
+– Um acerto deve ser marcado no tabuleiro como ‘x’ e um erro como
+‘o’;
+– Refor¸ca-se que a posi¸c˜ao das embarca¸c˜oes n˜ao deve ser exibida.
+• Ao final do jogo, perdendo ou ganhando, o jogador deve poder escolher
+sair do jogo ou jogar novamente;
+• Quando o jogo for finalizado, deve ser exibido o tabuleiro final com todos
+os acertos e erros, al´em de mostrar a posi¸c˜ao das embarca¸c˜oes do jogador
+que venceu. Tamb´em deve ser exibido um relat´orio de batalha mostrando
+o n´umero de tiros disparados por cada jogador, incluindo acertos/erros e
+embarca¸c˜oes afundadas.
+– No relat´orio, as embarca¸c˜oes afundadas devem mostrar a menor co￾ordenada poss´ıvel para a respectiva embarca¸c˜ao. Por exemplo: se
+um destr´oier na grade de referˆencia, ocupa as posi¸c˜oes (1,3), (2,3) e
