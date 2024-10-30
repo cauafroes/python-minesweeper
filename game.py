@@ -1,163 +1,230 @@
 import tkinter as tk
 import random
 
-class Ship:
-    def __init__(self, name, size):
-        self.name = name
-        self.size = size
-        self.hits = 0
+class Embarcacao:
+    def __init__(self, nome, tamanho):
+        self.nome = nome
+        self.tamanho = tamanho
+        self.acertos = 0
 
-    def is_sunk(self):
-        return self.hits >= self.size
+    def esta_afundado(self):
+        return self.acertos >= self.tamanho
 
-class Board:
-    def __init__(self, size=10):
-        self.size = size
-        self.grid = [[' ' for _ in range(size)] for _ in range(size)]
-        self.ships = []
+class Tabuleiro:
+    def __init__(self, tamanho=10):
+        self.tamanho = tamanho
+        self.grade = [[' ' for _ in range(tamanho)] for _ in range(tamanho)]
+        self.embarcacoes = []
 
-    def place_ship(self, ship, x, y, horizontal):
+    def posicionar_embarcacao(self, embarcacao, x, y, horizontal):
         if horizontal:
-            if y + ship.size > self.size:
+            if y + embarcacao.tamanho > self.tamanho:
                 return False
-            for i in range(ship.size):
-                if self.grid[x][y + i] != ' ':
+            for i in range(embarcacao.tamanho):
+                if self.grade[x][y + i] != ' ':
                     return False
-            for i in range(ship.size):
-                self.grid[x][y + i] = ship
+            for i in range(embarcacao.tamanho):
+                self.grade[x][y + i] = embarcacao
         else:
-            if x + ship.size > self.size:
+            if x + embarcacao.tamanho > self.tamanho:
                 return False
-            for i in range(ship.size):
-                if self.grid[x + i][y] != ' ':
+            for i in range(embarcacao.tamanho):
+                if self.grade[x + i][y] != ' ':
                     return False
-            for i in range(ship.size):
-                self.grid[x + i][y] = ship
-        self.ships.append(ship)
+            for i in range(embarcacao.tamanho):
+                self.grade[x + i][y] = embarcacao
+        self.embarcacoes.append(embarcacao)
         return True
 
-    def receive_attack(self, x, y):
-        if isinstance(self.grid[x][y], Ship):
-            ship = self.grid[x][y]
-            ship.hits += 1
-            self.grid[x][y] = 'X'
-            return 'Hit' if not ship.is_sunk() else f"{ship.name} sunk!"
-        elif self.grid[x][y] == ' ':
-            self.grid[x][y] = 'O'
-            return 'Miss'
-        return 'Already attacked'
+    def receber_ataque(self, x, y):
+        celula = self.grade[x][y]
 
-    def all_ships_sunk(self):
-        return all(ship.is_sunk() for ship in self.ships)
+        if self.grade[x][y] == 'X' or self.grade[x][y] == 'O':
+            return False
 
-class Player:
-    def __init__(self, name):
-        self.name = name
-        self.board = Board()
-        self.enemy_view = [[' ' for _ in range(10)] for _ in range(10)]
+        if isinstance(celula, Embarcacao):
+            celula.acertos += 1
+            self.grade[x][y] = 'X'  # Marca como "atingido"
+            return "Acertou!"
+        else:
+            self.grade[x][y] = 'O'  # Marca como "erro"
+            return "Errou!"
 
-    def place_ships(self):
-        ships = [("Submarine", 1), ("Submarine", 1), ("Submarine", 1), ("Submarine", 1),
-                 ("Destroyer", 3), ("Destroyer", 3), ("Carrier", 4)]
-        for name, size in ships:
-            placed = False
-            while not placed:
-                x, y = random.randint(0, 9), random.randint(0, 9)
-                horizontal = random.choice([True, False])
-                placed = self.board.place_ship(Ship(name, size), x, y, horizontal)
+class Jogador:
+    def __init__(self, nome):
+        self.nome = nome
+        self.tabuleiro = Tabuleiro()
+        self.frota = {
+            "Submarino": 4,
+            "Porta-aviões": 1,
+            "Destroyer": 2,
+        }
 
-class NavalBattleGame:
+class JogoBatalhaNaval:
     def __init__(self):
-        self.player1 = Player("Player 1")
-        self.player2 = Player("Player 2")
-        self.current_player = self.player1
-        self.opponent = self.player2
-        self.game_over = False
+        self.jogador1 = Jogador("Jogador 1")
+        self.jogador2 = Jogador("Jogador 2")
+        self.jogador_atual = self.jogador1
+        self.oponente = self.jogador2
+        self.jogo_iniciado = False
+        self.tamanhos_embarcacao = {
+            "Submarino": 1,
+            "Porta-aviões": 4,
+            "Destroyer": 3,
+        }
 
-        # Place ships
-        self.player1.place_ships()
-        self.player2.place_ships()
+        # Configurar janela Tkinter
+        self.janela = tk.Tk()
+        self.janela.title("Batalha Naval")
 
-        # Set up the Tkinter window
-        self.window = tk.Tk()
-        self.window.title("Naval Battle Game")
-
-        # Status Label
-        self.status_label = tk.Label(self.window, text=f"{self.current_player.name}'s turn", font=("Arial", 16))
+        # Mostrar status de configuração
+        self.status_label = tk.Label(self.janela, text=f"{self.jogador_atual.nome}: Coloque suas embarcações", font=("Arial", 14))
         self.status_label.grid(row=0, column=0, columnspan=20)
 
-        # Create Player 1's Board
-        tk.Label(self.window, text="Player 1's Board", font=("Arial", 12)).grid(row=1, column=0, columnspan=10)
-        self.player1_buttons = [[None for _ in range(10)] for _ in range(10)]
+        # Label de contagem de embarcações afundadas e flutuando
+        self.contagem_j1_label = tk.Label(self.janela, text="Embarcações do Jogador 1", font=("Arial", 10), anchor="w", justify="left")
+        self.contagem_j1_label.grid(row=13, column=0, columnspan=5, sticky="w")
+        
+        self.contagem_j2_label = tk.Label(self.janela, text="Embarcações do Jogador 2", font=("Arial", 10), anchor="e", justify="right")
+        self.contagem_j2_label.grid(row=13, column=15, columnspan=5, sticky="e")
+        
+        self.atualizar_contagem_embarcacoes()
+
+        # Criar tabuleiros de configuração para ambos os jogadores
+        self.criar_tabuleiro(self.jogador1, 1)
+        self.criar_tabuleiro(self.jogador2, 15)
+
+        self.sair_button = tk.Button(self.janela, text="Sair", command=self.sair)
+        self.sair_button.grid(row=12, column=3, columnspan=20)
+
+        # Dropdown para escolher o tipo de embarcação
+        self.tipo_embarcacao_var = tk.StringVar(self.janela)
+        self.tipo_embarcacao_var.set("Submarino")
+        self.menu_embarcacao = tk.OptionMenu(self.janela, self.tipo_embarcacao_var, *self.tamanhos_embarcacao.keys())
+        self.menu_embarcacao.grid(row=11, column=5, columnspan=5)
+
+        # Botão para definir a orientação da embarcação
+        self.orientacao_var = tk.StringVar(self.janela)
+        self.orientacao_var.set("Horizontal")
+        self.menu_orientacao = tk.OptionMenu(self.janela, self.orientacao_var, "Horizontal", "Vertical")
+        self.menu_orientacao.grid(row=11, column=10, columnspan=5)
+
+        # Botão para começar ou reiniciar o jogo
+        self.botao_iniciar = tk.Button(self.janela, text="Iniciar Jogo", command=self.iniciar_ou_reiniciar_jogo)
+        self.botao_iniciar.grid(row=12, column=0, columnspan=20)
+
+    def criar_tabuleiro(self, jogador, coluna_inicial):
+        botoes_tabuleiro = [[None for _ in range(10)] for _ in range(10)]
         for x in range(10):
             for y in range(10):
-                btn = tk.Button(self.window, text=" ", width=2, height=1,
-                                command=lambda x=x, y=y: self.attack(x, y, self.player1))
-                btn.grid(row=x + 2, column=y)
-                self.player1_buttons[x][y] = btn
+                btn = tk.Button(self.janela, text=" ", width=2, height=1,
+                                command=lambda x=x, y=y, p=jogador: self.posicionar_embarcacao_ou_atacar(p, x, y))
+                btn.grid(row=x + 1, column=coluna_inicial + y)
+                botoes_tabuleiro[x][y] = btn
+        if jogador == self.jogador1:
+            self.botoes_tabuleiro_j1 = botoes_tabuleiro
+        else:
+            self.botoes_tabuleiro_j2 = botoes_tabuleiro
 
-        # Spacer between the boards
-        tk.Label(self.window, text="   ").grid(row=1, column=10)
+    def posicionar_embarcacao_ou_atacar(self, jogador, x, y):
+        if not self.jogo_iniciado:
+            self.posicionar_embarcacao(jogador, x, y)
+        else:
+            if jogador == self.jogador_atual:
+                self.atacar(self.oponente, x, y)
 
-        # Create Player 2's Board
-        tk.Label(self.window, text="Player 2's Board", font=("Arial", 12)).grid(row=1, column=11, columnspan=10)
-        self.player2_buttons = [[None for _ in range(10)] for _ in range(10)]
-        for x in range(10):
-            for y in range(10):
-                btn = tk.Button(self.window, text=" ", width=2, height=1,
-                                command=lambda x=x, y=y: self.attack(x, y, self.player2))
-                btn.grid(row=x + 2, column=y + 11)
-                self.player2_buttons[x][y] = btn
-
-    def attack(self, x, y, target_player):
-        if self.game_over or target_player != self.opponent:
+    def posicionar_embarcacao(self, jogador, x, y):
+        tipo_embarcacao = self.tipo_embarcacao_var.get()
+        if jogador.frota[tipo_embarcacao] <= 0:
+            self.status_label.config(text=f"{jogador.nome}: Todas as embarcações de {tipo_embarcacao} já foram posicionadas!")
             return
 
-        result = self.opponent.board.receive_attack(x, y)
-        self.update_buttons(self.opponent, x, y, result)
+        tamanho_embarcacao = self.tamanhos_embarcacao[tipo_embarcacao]
+        horizontal = self.orientacao_var.get() == "Horizontal"
+        embarcacao = Embarcacao(tipo_embarcacao, tamanho_embarcacao)
 
-        if self.opponent.board.all_ships_sunk():
-            self.status_label.config(text=f"{self.current_player.name} wins!")
-            self.game_over = True
-            self.reveal_ships()
+        if jogador.tabuleiro.posicionar_embarcacao(embarcacao, x, y, horizontal):
+            jogador.frota[tipo_embarcacao] -= 1
+            self.status_label.config(text=f"{jogador.nome}: {tipo_embarcacao} posicionado!")
+            self.atualizar_contagem_embarcacoes()
+
+            if all(contagem == 0 for contagem in self.jogador1.frota.values()) and all(contagem == 0 for contagem in self.jogador2.frota.values()):
+                self.botao_iniciar.config(state="normal")
+                self.status_label.config(text="Ambos os jogadores posicionaram suas embarcações. Pronto para começar!")
         else:
-            # Update the attacking player's view
-            self.update_attack_indicator(x, y)
-            # Update the attacking board with an asterisk
-            self.update_player_board_indicator(x, y)
-            # Switch turns
-            self.current_player, self.opponent = self.opponent, self.current_player
-            self.status_label.config(text=f"{self.current_player.name}'s turn")
+            self.status_label.config(text=f"{jogador.nome}: Posição inválida para o {tipo_embarcacao}")
 
-    def update_buttons(self, player, x, y, result):
-        button = self.player1_buttons[x][y] if player == self.player2 else self.player2_buttons[x][y]
-        if result == 'Hit' or 'sunk' in result:
-            button.config(text="X", bg="red")
-        elif result == 'Miss':
-            button.config(text="O", bg="blue")
+    def iniciar_jogo(self):
+        self.jogo_iniciado = True
+        self.botao_iniciar.config(text="Iniciar Jogo")
+        self.botao_iniciar.config(state="disabled")
+        self.menu_embarcacao.config(state="disabled")
+        self.menu_orientacao.config(state="disabled")
+        self.jogador_atual = self.jogador1
+        self.status_label.config(text=f"{self.jogador_atual.nome}: Ataque o tabuleiro do adversário")
 
-    def update_attack_indicator(self, x, y):
-        """Update the button on the attacking player's board to indicate the attack."""
-        button = self.player1_buttons[x][y] if self.current_player == self.player1 else self.player2_buttons[x][y]
-        button.config(text="A", bg="yellow")  # Use "A" to indicate an attack
+    def atacar(self, oponente, x, y):
+        resultado = oponente.tabuleiro.receber_ataque(x, y)
 
-    def update_player_board_indicator(self, x, y):
-        """Update the attacking player's board to show where they attacked."""
-        button = self.player2_buttons[x][y] if self.current_player == self.player1 else self.player1_buttons[x][y]
-        button.config(text="*", bg="lightgray")  # Indicate the attack with an asterisk
+        if resultado == False:
+            self.status_label.config(text=f"{self.jogador_atual.nome}: Posição inválida")
+            return
 
-    def reveal_ships(self):
-        """Reveal all remaining ships on both boards at the end of the game."""
-        for x in range(10):
-            for y in range(10):
-                if isinstance(self.player1.board.grid[x][y], Ship):
-                    self.player1_buttons[x][y].config(text="S", bg="gray")
-                if isinstance(self.player2.board.grid[x][y], Ship):
-                    self.player2_buttons[x][y].config(text="S", bg="gray")
+        botoes_tabuleiro_oponente = self.botoes_tabuleiro_j2 if self.jogador_atual == self.jogador1 else self.botoes_tabuleiro_j1
+        botoes_tabuleiro_oponente[x][y].config(text="X" if resultado == "Acertou!" else "O", bg="red" if resultado == "Acertou!" else "blue")
 
-    def start(self):
-        self.window.mainloop()
+        if all(embarcacao.esta_afundado() for embarcacao in oponente.tabuleiro.embarcacoes):
+            self.status_label.config(text=f"{self.jogador_atual.nome} venceu!")
+            return
 
-if __name__ == "__main__":
-    game = NavalBattleGame()
-    game.start()
+        self.status_label.config(text=f"{self.jogador_atual.nome}: {resultado}")
+        self.jogador_atual, self.oponente = self.oponente, self.jogador_atual
+        self.atualizar_contagem_embarcacoes()
+
+    def atualizar_contagem_embarcacoes(self):
+        contagem_j1_texto = "Embarcações de Jogador 1:\n"
+        contagem_j2_texto = "Embarcações de Jogador 2:\n"
+
+        # Count embarcacoes for Jogador 1
+        embarcacoes_j1 = {}
+        for emb in self.jogador1.tabuleiro.embarcacoes:
+            if emb.nome not in embarcacoes_j1:
+                embarcacoes_j1[emb.nome] = {'total': 0, 'afundados': 0}
+            embarcacoes_j1[emb.nome]['total'] += 1
+            if emb.esta_afundado():
+                embarcacoes_j1[emb.nome]['afundados'] += 1
+
+        # Count embarcacoes for Jogador 2
+        embarcacoes_j2 = {}
+        for emb in self.jogador2.tabuleiro.embarcacoes:
+            if emb.nome not in embarcacoes_j2:
+                embarcacoes_j2[emb.nome] = {'total': 0, 'afundados': 0}
+            embarcacoes_j2[emb.nome]['total'] += 1
+            if emb.esta_afundado():
+                embarcacoes_j2[emb.nome]['afundados'] += 1
+
+        # Update text for Jogador 1
+        for tipo, contagem in embarcacoes_j1.items():
+            flutuando = contagem['total'] - contagem['afundados']
+            contagem_j1_texto += f"{tipo}: {flutuando} flutuando, {contagem['afundados']} afundados\n"
+
+        # Update text for Jogador 2
+        for tipo, contagem in embarcacoes_j2.items():
+            flutuando = contagem['total'] - contagem['afundados']
+            contagem_j2_texto += f"{tipo}: {flutuando} flutuando, {contagem['afundados']} afundados\n"
+
+        # Configure labels
+        self.contagem_j1_label.config(text=contagem_j1_texto)
+        self.contagem_j2_label.config(text=contagem_j2_texto)
+
+    def iniciar_ou_reiniciar_jogo(self):
+        if not self.jogo_iniciado:
+            self.iniciar_jogo()
+        else:
+            self.__init__()
+
+    def sair(self):
+        self.janela.destroy()
+
+jogo = JogoBatalhaNaval()
+jogo.janela.mainloop()
